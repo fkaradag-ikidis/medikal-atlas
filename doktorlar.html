@@ -82,7 +82,7 @@
             grid.innerHTML = doktorlar.map(doktor => `
                 <div class="doctor-card" data-sehir="${doktor.sehir || ''}" data-brans="${doktor.brans || ''}">
                     <div class="doctor-photo">
-                        <img src="${doktor.profil_fotosu || '/images/default-avatar.png'}" alt="${doktor.ad_soyad}">
+                       <img src="${doktor.profil_fotosu || 'https://via.placeholder.com/150?text=Doktor'}" alt="${doktor.ad_soyad}">
                     </div>
                     <div class="doctor-info">
                         <h3>${doktor.unvan || ''} ${doktor.ad_soyad || ''}</h3>
@@ -134,4 +134,5 @@
         });
     </script>
 </body>
+
 </html>
