@@ -2,22 +2,20 @@
 const SUPABASE_URL = 'https://jptoeqfmejdkycrzmikj.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_bGg-UZ46lXuET4o1HAe0Tg_9H1u3cSk';
 
-// Supabase client oluştur (var kullanarak tekrar tanımlama hatasını önler)
-var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// Global değişken - farklı isim kullanarak çakışmayı önle
+window.db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// Auth durumunu kontrol et
+// Tüm fonksiyonlarda window.db kullanacağız
 async function authKontrol() {
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session } } = await window.db.auth.getSession();
     
     if(!session) {
-        // Eğer giriş sayfasında değilsek ve session yoksa girişe yönlendir
         if(!window.location.pathname.includes('giris.html')) {
             window.location.href = '/giris.html';
         }
         return null;
     }
     
-    // Navbar güncelle
     const loginBtn = document.getElementById('loginBtn');
     const logoutBtn = document.getElementById('logoutBtn');
     const profileLink = document.getElementById('profileLink');
@@ -29,13 +27,12 @@ async function authKontrol() {
     return session.user;
 }
 
-// Çıkış yap
 async function cikisYap() {
-    await supabase.auth.signOut();
+    await window.db.auth.signOut();
     window.location.href = '/';
 }
 
-// Sayfa yüklendiğinde çalıştır
+// Sayfa yüklendiğinde
 document.addEventListener('DOMContentLoaded', async () => {
     
     // Giriş Formu
@@ -48,7 +45,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const sifre = document.getElementById('girisSifre').value;
             const hataMsg = document.getElementById('girisHata');
             
-            const { data, error } = await supabase.auth.signInWithPassword({
+            const { data, error } = await window.db.auth.signInWithPassword({
                 email: email,
                 password: sifre
             });
@@ -60,7 +57,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
             
             // Başarılı giriş - rol kontrolü
-            const { data: profil, error: profilError } = await supabase
+            const { data: profil, error: profilError } = await window.db
                 .from('profiles')
                 .select('rol')
                 .eq('id', data.user.id)
@@ -74,4 +71,73 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             // Yönlendirme
             if(profil && profil.rol === 'admin') {
-                window.location.href = '/admin/p
+                window.location.href = '/admin/panel.html';
+            } else {
+                window.location.href = '/profil.html';
+            }
+        });
+    }
+    
+    // Kayıt Formu
+    const kayitForm = document.getElementById('kayitForm');
+    if(kayitForm) {
+        kayitForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const rol = document.getElementById('kayitRol').value;
+            const email = document.getElementById('kayitEmail').value;
+            const sifre = document.getElementById('kayitSifre').value;
+            const hataMsg = document.getElementById('kayitHata');
+            
+            if(!rol) {
+                if(hataMsg) hataMsg.textContent = 'Lütfen hesap tipi seçin';
+                return;
+            }
+            
+            const { data: authData, error: authError } = await window.db.auth.signUp({
+                email: email,
+                password: sifre,
+            });
+            
+            if(authError) {
+                if(hataMsg) hataMsg.textContent = authError.message;
+                alert('Kayıt hatası: ' + authError.message);
+                return;
+            }
+            
+            const profilData = {
+                id: authData.user.id,
+                rol: rol,
+                email: email,
+                telefon: document.getElementById('telefon')?.value || ''
+            };
+            
+            if(rol === 'firma') {
+                profilData.firma_adi = document.getElementById('firmaAdi')?.value || '';
+                profilData.vergi_no = document.getElementById('vergiNo')?.value || '';
+            } else if(rol === 'doktor') {
+                profilData.ad_soyad = document.getElementById('doktorAd')?.value || '';
+                profilData.unvan = document.getElementById('doktorUnvan')?.value || '';
+                profilData.brans = document.getElementById('doktorBrans')?.value || '';
+            }
+            
+            const { error: profilError } = await window.db
+                .from('profiles')
+                .update(profilData)
+                .eq('id', authData.user.id);
+            
+            if(profilError) {
+                if(hataMsg) hataMsg.textContent = profilError.message;
+                return;
+            }
+            
+            alert('Kayıt başarılı! Giriş yapabilirsiniz.');
+            window.location.href = '/giris.html';
+        });
+    }
+    
+    // Sayfa yüklendiğinde auth kontrolü
+    if(!window.location.pathname.includes('giris.html')) {
+        await authKontrol();
+    }
+});
