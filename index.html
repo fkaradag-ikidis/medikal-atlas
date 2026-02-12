@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0d6efd">
+    <title>Medikal Estetik Ürünler Atlası</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="stylesheet" href="/css/style.css">
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <a href="/" class="logo">🏥 Medikal Estetik Atlası</a>
+            <div class="nav-links" id="navLinks">
+                <a href="/" class="active">Ürünler</a>
+                <a href="/doktorlar.html">Doktorlar</a>
+                <a href="/karsilastir.html" id="compareLink" style="display:none;">Karşılaştırma</a>
+                <a href="/profil.html" id="profileLink" style="display:none;">Profilim</a>
+                <a href="/giris.html" id="loginBtn">Giriş/Kayıt</a>
+                <button id="logoutBtn" style="display:none;" onclick="cikisYap()">Çıkış</button>
+            </div>
+            <button class="mobile-menu-btn" onclick="toggleMenu()">☰</button>
+        </div>
+    </nav>
+
+    <main class="container">
+        <section class="hero">
+            <h1>Medikal Estetik Ürünler Atlası</h1>
+            <p>Tüm estetik ürünlerinin kapsamlı veritabanı</p>
+        </section>
+
+        <section class="categories-grid" id="kategoriler">
+            <!-- Dinamik olarak doldurulacak -->
+            <div class="category-card" onclick="urunleriFiltrele('toksin')">
+                <div class="category-icon">💉</div>
+                <h3>Toksin</h3>
+                <p>Botulinum toksin ürünleri</p>
+            </div>
+            <div class="category-card" onclick="urunleriFiltrele('dolgu')">
+                <div class="category-icon">💧</div>
+                <h3>Dolgu</h3>
+                <p>Dermal dolgu maddeleri</p>
+            </div>
+            <div class="category-card" onclick="urunleriFiltrele('mezoterapi')">
+                <div class="category-icon">✨</div>
+                <h3>Mezoterapi</h3>
+                <p>Mezoterapi çözümleri</p>
+            </div>
+            <div class="category-card" onclick="urunleriFiltrele('laser')">
+                <div class="category-icon">🔦</div>
+                <h3>Laser</h3>
+                <p>Lazer cihazları ve sarf malzemeleri</p>
+            </div>
+            <div class="category-card" onclick="urunleriFiltrele('sarf')">
+                <div class="category-icon">🧪</div>
+                <h3>Sarf Malzeme</h3>
+                <p>Tüketim malzemeleri</p>
+            </div>
+            <div class="category-card" onclick="urunleriFiltrele('masa')">
+                <div class="category-icon">🛋️</div>
+                <h3>Masa/Ekipman</h3>
+                <p>Klinik ekipmanları</p>
+            </div>
+            <div class="category-card" onclick="urunleriFiltrele('cilt-analiz')">
+                <div class="category-icon">🔬</div>
+                <h3>Cilt Analiz</h3>
+                <p>Analiz cihazları ve ürünleri</p>
+            </div>
+        </section>
+
+        <!-- Ürün Listesi (Seçilen kategoriye göre) -->
+        <section id="urunListesi" class="products-section" style="display:none;">
+            <div class="section-header">
+                <h2 id="seciliKategori">Ürünler</h2>
+                <div class="filters">
+                    <input type="text" id="arama" placeholder="Ürün ara..." onkeyup="urunAra()">
+                    <button onclick="karsilastirmayaEkle()" id="karsilastirBtn" disabled>
+                        Karşılaştır (<span id="karsilastirSayi">0</span>)
+                    </button>
+                </div>
+            </div>
+            <div class="products-grid" id="urunGrid">
+                <!-- Ürünler buraya gelecek -->
+            </div>
+        </section>
+    </main>
+
+    <script src="/js/auth.js"></script>
+    <script src="/js/app.js"></script>
+    <script>
+        // Service Worker kayıt (PWA)
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js');
+        }
+    </script>
+</body>
+</html>

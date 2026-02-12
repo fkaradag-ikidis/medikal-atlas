@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doktorlar - Medikal Estetik Atlası</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <a href="/" class="logo">🏥 Medikal Estetik Atlası</a>
+            <div class="nav-links">
+                <a href="/">Ürünler</a>
+                <a href="/doktorlar.html" class="active">Doktorlar</a>
+                <a href="/giris.html" id="loginBtn">Giriş/Kayıt</a>
+                <button id="logoutBtn" style="display:none;" onclick="cikisYap()">Çıkış</button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container">
+        <section class="hero">
+            <h1>Medikal Estetik Doktorları</h1>
+            <p>Uzman hekimleri keşfedin</p>
+        </section>
+
+        <section class="filters-section">
+            <div class="filters">
+                <input type="text" id="arama" placeholder="Doktor ara..." onkeyup="doktorAra()">
+                <select id="sehirFilter" onchange="doktorFiltrele()">
+                    <option value="">Tüm Şehirler</option>
+                </select>
+                <select id="bransFilter" onchange="doktorFiltrele()">
+                    <option value="">Tüm Branşlar</option>
+                </select>
+            </div>
+        </section>
+
+        <section class="doctors-grid" id="doktorGrid">
+            <!-- Doktorlar buraya gelecek -->
+        </section>
+    </main>
+
+    <script src="/js/auth.js"></script>
+    <script>
+        async function doktorlariYukle() {
+            const { data: doktorlar, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('rol', 'doktor');
+            
+            if(error) {
+                console.error('Hata:', error);
+                return;
+            }
+            
+            const grid = document.getElementById('doktorGrid');
+            
+            if(doktorlar.length === 0) {
+                grid.innerHTML = '<p class="no-data">Henüz kayıtlı doktor bulunmamaktadır.</p>';
+                return;
+            }
+            
+            // Şehir ve branş filtresi için seçenekleri doldur
+            const sehirler = [...new Set(doktorlar.map(d => d.sehir).filter(Boolean))];
+            const branslar = [...new Set(doktorlar.map(d => d.brans).filter(Boolean))];
+            
+            const sehirSelect = document.getElementById('sehirFilter');
+            const bransSelect = document.getElementById('bransFilter');
+            
+            sehirler.forEach(s => {
+                sehirSelect.innerHTML += `<option value="${s}">${s}</option>`;
+            });
+            
+            branslar.forEach(b => {
+                bransSelect.innerHTML += `<option value="${b}">${b}</option>`;
+            });
+            
+            // Doktorları listele
+            grid.innerHTML = doktorlar.map(doktor => `
+                <div class="doctor-card" data-sehir="${doktor.sehir || ''}" data-brans="${doktor.brans || ''}">
+                    <div class="doctor-photo">
+                        <img src="${doktor.profil_fotosu || '/images/default-avatar.png'}" alt="${doktor.ad_soyad}">
+                    </div>
+                    <div class="doctor-info">
+                        <h3>${doktor.unvan || ''} ${doktor.ad_soyad || ''}</h3>
+                        <p class="doctor-branch">${doktor.brans || ''}</p>
+                        <p class="doctor-location">📍 ${doktor.sehir || ''}</p>
+                        <p class="doctor-interests">${doktor.ilgi_alanlari || ''}</p>
+                        ${doktor.telefon ? `<a href="tel:${doktor.telefon}" class="doctor-phone">📞 ${doktor.telefon}</a>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function doktorAra() {
+            const arama = document.getElementById('arama').value.toLowerCase();
+            const kartlar = document.querySelectorAll('.doctor-card');
+            
+            kartlar.forEach(kart => {
+                const text = kart.textContent.toLowerCase();
+                kart.style.display = text.includes(arama) ? 'block' : 'none';
+            });
+        }
+        
+        function doktorFiltrele() {
+            const sehir = document.getElementById('sehirFilter').value;
+            const brans = document.getElementById('bransFilter').value;
+            const kartlar = document.querySelectorAll('.doctor-card');
+            
+            kartlar.forEach(kart => {
+                const kartSehir = kart.getAttribute('data-sehir');
+                const kartBrans = kart.getAttribute('data-brans');
+                
+                const sehirUyum = !sehir || kartSehir === sehir;
+                const bransUyum = !brans || kartBrans === brans;
+                
+                kart.style.display = (sehirUyum && bransUyum) ? 'block' : 'none';
+            });
+        }
+        
+        // Sayfa yüklenince
+        document.addEventListener('DOMContentLoaded', () => {
+            doktorlariYukle();
+            // Auth durumunu kontrol et
+            supabase.auth.getSession().then(({data: {session}}) => {
+                if(session) {
+                    document.getElementById('loginBtn').style.display = 'none';
+                    document.getElementById('logoutBtn').style.display = 'inline-block';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

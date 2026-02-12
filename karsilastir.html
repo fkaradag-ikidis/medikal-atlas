@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ürün Karşılaştırma - Medikal Estetik Atlası</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <a href="/" class="logo">🏥 Medikal Estetik Atlası</a>
+            <div class="nav-links">
+                <a href="/">Ürünler</a>
+                <a href="/doktorlar.html">Doktorlar</a>
+                <a href="/karsilastir.html" class="active">Karşılaştırma</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container">
+        <h1>Ürün Karşılaştırma</h1>
+        <p class="compare-info">Maksimum 3 ürünü yan yana karşılaştırabilirsiniz.</p>
+
+        <div class="comparison-container">
+            <div class="comparison-table-wrapper">
+                <table class="comparison-table" id="karsilastirmaTablosu">
+                    <thead>
+                        <tr id="urunBasliklar">
+                            <th>Özellikler</th>
+                            <th id="urun1Baslik" class="product-col">
+                                <button onclick="urunSec(1)" class="sec-btn">Ürün Seç</button>
+                            </th>
+                            <th id="urun2Baslik" class="product-col">
+                                <button onclick="urunSec(2)" class="sec-btn">Ürün Seç</button>
+                            </th>
+                            <th id="urun3Baslik" class="product-col">
+                                <button onclick="urunSec(3)" class="sec-btn">Ürün Seç</button>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody id="karsilastirmaGovde">
+                        <!-- Tüm alanlar buraya JS ile eklenecek -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Ürün Seçim Modalı -->
+        <div id="urunModal" class="modal" style="display:none;">
+            <div class="modal-content">
+                <span class="close" onclick="modalKapat()">&times;</span>
+                <h2>Ürün Seçin</h2>
+                <input type="text" id="modalArama" placeholder="Ürün ara..." onkeyup="modalUrunAra()">
+                <div id="modalUrunListesi" class="modal-list">
+                    <!-- Ürünler listelenecek -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="/js/auth.js"></script>
+    <script src="/js/app.js"></script>
+    <script>
+        // Karşılaştırma alanları tanımı
+        const karsilastirmaAlanlari = [
+            { key: 'urun_adi', label: 'Ürün Adı', tip: 'text' },
+            { key: 'firma_adi', label: 'Firma', tip: 'text' },
+            { key: 'kategori', label: 'Kategori', tip: 'text' },
+            { key: 'uygulama_alanlari', label: 'Uygulandığı Alanlar', tip: 'text' },
+            { key: 'derinlik', label: 'Derinlik', tip: 'text' },
+            { key: 'etki_baslangici', label: 'Etki Başlangıcı', tip: 'text' },
+            { key: 'etki_suresi', label: 'Etki Süresi', tip: 'text' },
+            { key: 'hazirlanmasi', label: 'Hazırlanması', tip: 'text' },
+            { key: 'saklama_kosullari', label: 'Saklama Koşulları', tip: 'text' },
+            { key: 'rekons_stresi', label: 'Rekons Süresi', tip: 'text' },
+            { key: 'teknolojisi', label: 'Teknolojisi', tip: 'text' },
+            { key: 'endikasyonlar', label: 'Endikasyonlar', tip: 'text' },
+            { key: 'etkilesimler', label: 'Etkileşimler', tip: 'text' },
+            { key: 'kontrendikasyonlar', label: 'Kontrendikasyonlar', tip: 'text' },
+            { key: 'sinif', label: 'Class (1-2-3)', tip: 'select', options: ['1', '2', '3'] },
+            { key: 'fda_onay', label: 'FDA Onayı', tip: 'select', options: ['Onaylı', 'Onaysız'] },
+            { key: 'ce_belgesi', label: 'CE Belgesi', tip: 'select', options: ['Evet', 'Hayır'] },
+            { key: 'uts_kayit', label: 'ÜTS Kayıt', tip: 'select', options: ['Evet', 'Hayır'] },
+            { key: 'kutu_fiyati', label: 'Kutu Fiyatı', tip: 'fiyat' },
+            { key: 'kutu_icerigi', label: 'Kutu İçeriği', tip: 'text' },
+            { key: 'adet_fiyati', label: 'Adet Fiyatı', tip: 'fiyat' },
+            { key: 'aciklama', label: 'Ürün Açıklaması', tip: 'textarea' },
+            { key: 'satin_alma_linki', label: 'Satın Alma Linki', tip: 'link' }
+        ];
+
+        let seciliUrunler = { 1: null, 2: null, 3: null };
+        let aktifSecim = null;
+
+        function tabloOlustur() {
+            const tbody = document.getElementById('karsilastirmaGovde');
+            tbody.innerHTML = '';
+            
+            karsilastirmaAlanlari.forEach(alan => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="feature-name">${alan.label}</td>
+                    <td id="urun1_${alan.key}" class="product-data">-</td>
+                    <td id="urun2_${alan.key}" class="product-data">-</td>
+                    <td id="urun3_${alan.key}" class="product-data">-</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function urunSec(sira) {
+            aktifSecim = sira;
+            document.getElementById('urunModal').style.display = 'block';
+            modalUrunleriYukle();
+        }
+
+        function modalKapat() {
+            document.getElementById('urunModal').style.display = 'none';
+        }
+
+        async function modalUrunleriYukle() {
+            const { data: urunler } = await supabase.from('urunler').select('*');
+            const liste = document.getElementById('modalUrunListesi');
+            liste.innerHTML = urunler.map(u => `
+                <div class="modal-item" onclick="urunAta('${u.id}')">
+                    <strong>${u.urun_adi}</strong>
+                    <small>${u.firma_adi} - ${u.kategori}</small>
+                </div>
+            `).join('');
+        }
+
+        async function urunAta(urunId) {
+            const { data: urun } = await supabase.from('urunler').select('*').eq('id', urunId).single();
+            seciliUrunler[aktifSecim] = urun;
+            
+            // Başlığı güncelle
+            document.getElementById(`urun${aktifSecim}Baslik`).innerHTML = `
+                <div class="selected-product">
+                    <h3>${urun.urun_adi}</h3>
+                    <button onclick="urunKaldir(${aktifSecim})" class="remove-btn">Kaldır</button>
+                </div>
+            `;
+            
+            // Verileri doldur
+            karsilastirmaAlanlari.forEach(alan => {
+                const hücre = document.getElementById(`urun${aktifSecim}_${alan.key}`);
+                let deger = urun[alan.key] || '-';
+                
+                if(alan.tip === 'fiyat' && deger !== '-') {
+                    deger = '₺' + parseFloat(deger).toLocaleString('tr-TR');
+                } else if(alan.tip === 'link' && deger !== '-') {
+                    deger = `<a href="${deger}" target="_blank" class="buy-link">Satın Al →</a>`;
+                }
+                
+                hücre.innerHTML = deger;
+            });
+            
+            modalKapat();
+        }
+
+        function urunKaldir(sira) {
+            seciliUrunler[sira] = null;
+            document.getElementById(`urun${sira}Baslik`).innerHTML = `
+                <button onclick="urunSec(${sira})" class="sec-btn">Ürün Seç</button>
+            `;
+            karsilastirmaAlanlari.forEach(alan => {
+                document.getElementById(`urun${sira}_${alan.key}`).innerHTML = '-';
+            });
+        }
+
+        // İlk yükleme
+        tabloOlustur();
+    </script>
+</body>
+</html>

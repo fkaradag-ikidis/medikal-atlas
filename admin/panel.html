@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Medikal Estetik Atlası</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Admin panel URL'si gizli, robots.txt ile engellenebilir -->
+    <meta name="robots" content="noindex, nofollow">
+</head>
+<body>
+    <nav class="navbar admin-nav">
+        <div class="container">
+            <span class="logo">🔐 Admin Panel</span>
+            <button onclick="cikisYap()">Çıkış</button>
+        </div>
+    </nav>
+
+    <main class="container admin-container">
+        <h1>Yönetim Paneli</h1>
+        
+        <div class="admin-stats">
+            <div class="stat-card">
+                <h3>Toplam Ürün</h3>
+                <p id="toplamUrun">0</p>
+            </div>
+            <div class="stat-card">
+                <h3>Toplam Doktor</h3>
+                <p id="toplamDoktor">0</p>
+            </div>
+            <div class="stat-card">
+                <h3>Toplam Firma</h3>
+                <p id="toplamFirma">0</p>
+            </div>
+        </div>
+
+        <section class="admin-section">
+            <h2>Onay Bekleyen İşlemler</h2>
+            <div id="onayListesi"></div>
+        </section>
+    </main>
+
+    <script src="/js/auth.js"></script>
+    <script>
+        // Admin kontrolü - kullanıcı admin değilse ana sayfaya yönlendir
+        document.addEventListener('DOMContentLoaded', async () => {
+            const user = await authKontrol();
+            if(!user) {
+                window.location.href = '/';
+                return;
+            }
+            
+            const { data: profil } = await supabase
+                .from('profiles')
+                .select('rol')
+                .eq('id', user.id)
+                .single();
+            
+            if(!profil || profil.rol !== 'admin') {
+                window.location.href = '/';
+                return;
+            }
+            
+            istatistikleriYukle();
+        });
+
+        async function istatistikleriYukle() {
+            const { count: urunSayi } = await supabase.from('urunler').select('*', { count: 'exact' });
+            const { count: doktorSayi } = await supabase.from('profiles').select('*', { count: 'exact' }).eq('rol', 'doktor');
+            const { count: firmaSayi } = await supabase.from('profiles').select('*', { count: 'exact' }).eq('rol', 'firma');
+            
+            document.getElementById('toplamUrun').textContent = urunSayi;
+            document.getElementById('toplamDoktor').textContent = doktorSayi;
+            document.getElementById('toplamFirma').textContent = firmaSayi;
+        }
+    </script>
+</body>
+</html>

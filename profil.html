@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profilim - Medikal Estetik Atlası</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <a href="/" class="logo">🏥 Medikal Estetik Atlası</a>
+            <div class="nav-links">
+                <a href="/">Ürünler</a>
+                <a href="/doktorlar.html">Doktorlar</a>
+                <a href="/profil.html" class="active">Profilim</a>
+                <button onclick="cikisYap()">Çıkış</button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container">
+        <div class="profile-layout">
+            <aside class="profile-sidebar">
+                <div class="profile-photo-container">
+                    <img id="profilFoto" src="/images/default-avatar.png" alt="Profil">
+                    <button onclick="fotoDegistir()" class="change-photo">📷 Değiştir</button>
+                    <input type="file" id="fotoInput" accept="image/*" style="display:none;" onchange="fotoYukle(event)">
+                </div>
+                <h2 id="sidebarAd">Kullanıcı Adı</h2>
+                <p id="sidebarRol" class="role-badge">Rol</p>
+                
+                <nav class="profile-nav">
+                    <button onclick="sekmeGoster('bilgiler')" class="active">Bilgilerim</button>
+                    <button onclick="sekmeGoster('sifre')">Şifre Değiştir</button>
+                    <button id="urunlerimBtn" onclick="sekmeGoster('urunler')" style="display:none;">Ürünlerim</button>
+                </nav>
+            </aside>
+
+            <div class="profile-content">
+                <!-- Bilgiler Sekmesi -->
+                <section id="bilgilerSekme" class="profile-section">
+                    <h1>Profil Bilgileri</h1>
+                    <form id="profilForm" onsubmit="profilGuncelle(event)">
+                        <!-- Dinamik olarak doldurulacak -->
+                        <div id="profilAlanlar"></div>
+                        <button type="submit" class="btn-primary">Kaydet</button>
+                    </form>
+                </section>
+
+                <!-- Şifre Değiştirme -->
+                <section id="sifreSekme" class="profile-section" style="display:none;">
+                    <h1>Şifre Değiştir</h1>
+                    <form onsubmit="sifreDegistir(event)">
+                        <div class="form-group">
+                            <label>Mevcut Şifre</label>
+                            <input type="password" id="mevcutSifre" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Yeni Şifre</label>
+                            <input type="password" id="yeniSifre" required minlength="6">
+                        </div>
+                        <div class="form-group">
+                            <label>Yeni Şifre (Tekrar)</label>
+                            <input type="password" id="yeniSifreTekrar" required>
+                        </div>
+                        <button type="submit" class="btn-primary">Şifreyi Güncelle</button>
+                    </form>
+                </section>
+
+                <!-- Firma Ürünleri -->
+                <section id="urunlerSekme" class="profile-section" style="display:none;">
+                    <h1>Ürünlerim</h1>
+                    <button onclick="yeniUrunModal()" class="btn-secondary">+ Yeni Ürün Ekle</button>
+                    <div id="firmaUrunListesi" class="my-products"></div>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <!-- Yeni Ürün Modalı -->
+    <div id="urunModal" class="modal">
+        <div class="modal-content large">
+            <span class="close" onclick="document.getElementById('urunModal').style.display='none'">&times;</span>
+            <h2>Yeni Ürün Ekle</h2>
+            <form id="urunForm" onsubmit="urunKaydet(event)">
+                <div class="form-grid">
+                    <div class="form-group required">
+                        <label>Ürün Adı *</label>
+                        <input type="text" name="urun_adi" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Kategori *</label>
+                        <select name="kategori" required>
+                            <option value="toksin">Toksin</option>
+                            <option value="dolgu">Dolgu</option>
+                            <option value="mezoterapi">Mezoterapi</option>
+                            <option value="laser">Laser</option>
+                            <option value="sarf">Sarf</option>
+                            <option value="masa">Masa</option>
+                            <option value="cilt-analiz">Cilt Analiz</option>
+                        </select>
+                    </div>
+                    <!-- Diğer tüm alanlar buraya eklenecek -->
+                    <div class="form-group full-width">
+                        <label>Uygulandığı Alanlar</label>
+                        <input type="text" name="uygulama_alanlari">
+                    </div>
+                    <div class="form-group">
+                        <label>Derinlik</label>
+                        <input type="text" name="derinlik">
+                    </div>
+                    <div class="form-group">
+                        <label>Etki Başlangıcı</label>
+                        <input type="text" name="etki_baslangici">
+                    </div>
+                    <div class="form-group">
+                        <label>Etki Süresi</label>
+                        <input type="text" name="etki_suresi">
+                    </div>
+                    <div class="form-group">
+                        <label>Hazırlanması</label>
+                        <input type="text" name="hazirlanmasi">
+                    </div>
+                    <div class="form-group">
+                        <label>Saklama Koşulları</label>
+                        <input type="text" name="saklama_kosullari">
+                    </div>
+                    <div class="form-group">
+                        <label>Rekons Süresi</label>
+                        <input type="text" name="rekons_stresi">
+                    </div>
+                    <div class="form-group">
+                        <label>Teknolojisi</label>
+                        <input type="text" name="teknolojisi">
+                    </div>
+                    <div class="form-group">
+                        <label>Endikasyonlar</label>
+                        <input type="text" name="endikasyonlar">
+                    </div>
+                    <div class="form-group">
+                        <label>Etkileşimler</label>
+                        <input type="text" name="etkilesimler">
+                    </div>
+                    <div class="form-group">
+                        <label>Kontrendikasyonlar</label>
+                        <input type="text" name="kontrendikasyonlar">
+                    </div>
+                    <div class="form-group">
+                        <label>Class</label>
+                        <select name="sinif">
+                            <option value="">Seçiniz</option>
+                            <option value="1">Class 1</option>
+                            <option value="2">Class 2</option>
+                            <option value="3">Class 3</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>FDA Onayı</label>
+                        <select name="fda_onay">
+                            <option value="">Seçiniz</option>
+                            <option value="Onaylı">Onaylı</option>
+                            <option value="Onaysız">Onaysız</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>CE Belgesi</label>
+                        <select name="ce_belgesi">
+                            <option value="">Seçiniz</option>
+                            <option value="Evet">Evet</option>
+                            <option value="Hayır">Hayır</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>ÜTS Kayıt</label>
+                        <select name="uts_kayit">
+                            <option value="">Seçiniz</option>
+                            <option value="Evet">Evet</option>
+                            <option value="Hayır">Hayır</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Kutu Fiyatı (₺)</label>
+                        <input type="number" name="kutu_fiyati" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label>Kutu İçeriği</label>
+                        <input type="text" name="kutu_icerigi">
+                    </div>
+                    <div class="form-group">
+                        <label>Adet Fiyatı (₺)</label>
+                        <input type="number" name="adet_fiyati" step="0.01">
+                    </div>
+                    <div class="form-group full-width">
+                        <label>Satın Alma Linki</label>
+                        <input type="url" name="satin_alma_linki">
+                    </div>
+                    <div class="form-group full-width">
+                        <label>Ürün Açıklaması</label>
+                        <textarea name="aciklama" rows="3"></textarea>
+                    </div>
+                </div>
+                <button type="submit" class="btn-primary">Kaydet</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="/js/auth.js"></script>
+    <script src="/js/app.js"></script>
+    <script>
+        let mevcutKullanici = null;
+        let kullaniciRol = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            mevcutKullanici = await authKontrol();
+            if(!mevcutKullanici) return;
+            
+            await profilYukle();
+        });
+
+        async function profilYukle() {
+            const { data: profil } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', mevcutKullanici.id)
+                .single();
+            
+            if(!profil) return;
+            
+            kullaniciRol = profil.rol;
+            
+            // Sidebar güncelle
+            document.getElementById('sidebarAd').textContent = profil.rol === 'firma' ? profil.firma_adi : profil.ad_soyad;
+            document.getElementById('sidebarRol').textContent = profil.rol === 'firma' ? 'Firma Hesabı' : 'Doktor';
+            if(profil.profil_fotosu) document.getElementById('profilFoto').src = profil.profil_fotosu;
+            
+            // Rol bazlı UI
+            if(profil.rol === 'firma') {
+                document.getElementById('urunlerimBtn').style.display = 'block';
+                document.getElementById('profilAlanlar').innerHTML = `
+                    <div class="form-group">
+                        <label>Firma Adı</label>
+                        <input type="text" name="firma_adi" value="${profil.firma_adi || ''}" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Vergi No</label>
+                        <input type="text" name="vergi_no" value="${profil.vergi_no || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label>Telefon</label>
+                        <input type="tel" name="telefon" value="${profil.telefon || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label>Adres</label>
+                        <textarea name="adres">${profil.adres || ''}</textarea>
+                    </div>
+                `;
+            } else if(profil.rol === 'doktor') {
+                document.getElementById('profilAlanlar').innerHTML = `
+                    <div class="form-group">
+                        <label>Ad Soyad</label>
+                        <input type="text" name="ad_soyad" value="${profil.ad_soyad || ''}" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Ünvan</label>
+                        <input type="text" name="unvan" value="${profil.unvan || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label>Branş</label>
+                        <input type="text" name="brans" value="${profil.brans || ''}" required>
+                    </div>
+                    <div class="form-group">
+                        <label>İlgi Alanları</label>
+                        <textarea name="ilgi_alanlari" placeholder="Örn: Yüz estetiği, botox, dolgu...">${profil.ilgi_alanlari || ''}</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Şehir</label>
+                        <input type="text" name="sehir" value="${profil.sehir || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label>Adres</label>
+                        <textarea name="adres">${profil.adres || ''}</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Cep Telefonu</label>
+                        <input type="tel" name="telefon" value="${profil.telefon || ''}">
+                    </div>
+                `;
+            }
+        }
+
+        function fotoDegistir() {
+            document.getElementById('fotoInput').click();
+        }
+
+        async function fotoYukle(event) {
+            const file = event.target.files[0];
+            if(!file) return;
+            
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${mevcutKullanici.id}-${Date.now()}.${fileExt}`;
+            
+            const { data, error } = await supabase.storage
+                .from('profil-fotolari')
+                .upload(fileName, file);
+            
+            if(error) {
+                alert('Fotoğraf yüklenemedi: ' + error.message);
+                return;
+            }
+            
+            const { data: urlData } = supabase.storage
+                .from('profil-fotolari')
+                .getPublicUrl(fileName);
+            
+            await supabase.from('profiles')
+                .update({ profil_fotosu: urlData.publicUrl })
+                .eq('id', mevcutKullanici.id);
+            
+            document.getElementById('profilFoto').src = urlData.publicUrl;
+        }
+
+        function sekmeGoster(sekme) {
+            document.querySelectorAll('.profile-section').forEach(s => s.style.display = 'none');
+            document.querySelectorAll('.profile-nav button').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            document.getElementById(sekme + 'Sekme').style.display = 'block';
+            
+            if(sekme === 'urunler') firmaUrunleriniYukle();
+        }
+
+        async function sifreDegistir(e) {
+            e.preventDefault();
+            const mevcut = document.getElementById('mevcutSifre').value;
+            const yeni = document.getElementById('yeniSifre').value;
+            const tekrar = document.getElementById('yeniSifreTekrar').value;
+            
+            if(yeni !== tekrar) {
+                alert('Yeni şifreler eşleşmiyor!');
+                return;
+            }
+            
+            const { error } = await supabase.auth.updateUser({ password: yeni });
+            
+            if(error) {
+                alert('Hata: ' + error.message);
+            } else {
+                alert('Şifreniz başarıyla değiştirildi!');
+                e.target.reset();
+            }
+        }
+    </script>
+</body>
+</html>
