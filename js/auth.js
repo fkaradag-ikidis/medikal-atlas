@@ -1,4 +1,4 @@
-// Supabase yapılandırması (kendi projenizin bilgileriyle değiştirin)
+
 const SUPABASE_URL = 'https://jptoeqfmejdkycrzmikj.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_bGg-UZ46lXuET4o1HAe0Tg_9H1u3cSk';
 
@@ -114,5 +114,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 });
+
 
 
