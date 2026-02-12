@@ -1,6 +1,6 @@
 // Supabase yapılandırması (kendi projenizin bilgileriyle değiştirin)
-const SUPABASE_URL = 'https://your-project.supabase.co';
-const SUPABASE_KEY = 'your-anon-key';
+const SUPABASE_URL = 'https://jptoeqfmejdkycrzmikj.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_bGg-UZ461XuET4o1HAeOTg_9H1u3...';
 
 const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -112,4 +112,5 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
 });
