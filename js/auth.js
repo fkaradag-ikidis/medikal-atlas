@@ -1,8 +1,8 @@
 // Supabase yapılandırması (kendi projenizin bilgileriyle değiştirin)
 const SUPABASE_URL = 'https://jptoeqfmejdkycrzmikj.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_bGg-UZ461XuET4o1HAeOTg_9H1u3...';
+const SUPABASE_KEY = 'sb_publishable_bGg-UZ46lXuET4o1HAe0Tg_9H1u3cSk';
 
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+var supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // Auth durumunu kontrol et
 async function authKontrol() {
@@ -114,3 +114,4 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 });
+
