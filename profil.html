@@ -6,6 +6,7 @@
     <title>Profilim - Medikal Estetik Atlası</title>
     <link rel="stylesheet" href="/css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/js/auth.js"></script>
 </head>
 <body>
     <nav class="navbar">
@@ -22,14 +23,13 @@
 
     <main class="container">
         <div class="profile-layout">
-            <!-- Sol Sidebar -->
             <aside class="profile-sidebar">
                 <div class="profile-photo-container">
-                    <img id="profilFoto" src="https://via.placeholder.com/150?text=Profil" alt="Profil">
-                    <input type="file" id="fotoInput" accept="image/*" style="display:none;" onchange="fotoYukle(this)">
+                    <img id="profilFoto" src="https://placehold.co/150x150/667eea/ffffff?text=Profil" alt="Profil">
+                    <input type="file" id="fotoInput" accept="image/*" style="display:none;">
                     <button onclick="document.getElementById('fotoInput').click()" class="change-photo">📷 Fotoğraf Değiştir</button>
                 </div>
-                <h2 id="sidebarAd">Kullanıcı</h2>
+                <h2 id="sidebarAd">Yükleniyor...</h2>
                 <p id="sidebarRol" class="role-badge">-</p>
                 
                 <nav class="profile-nav">
@@ -39,22 +39,18 @@
                 </nav>
             </aside>
 
-            <!-- Sağ İçerik -->
             <div class="profile-content">
-                
-                <!-- Bilgiler Sekmesi -->
                 <section id="tab-bilgiler" class="profile-section">
                     <h1>Profil Bilgileri</h1>
-                    <form id="profilForm" onsubmit="return profilGuncelle(event)">
+                    <form id="profilForm">
                         <div id="profilFormContent"></div>
                         <button type="submit" class="btn-primary">Bilgileri Kaydet</button>
                     </form>
                 </section>
 
-                <!-- Şifre Değiştirme Sekmesi -->
                 <section id="tab-sifre" class="profile-section" style="display:none;">
                     <h1>Şifre Değiştir</h1>
-                    <form onsubmit="return sifreDegistir(event)">
+                    <form id="sifreForm">
                         <div class="form-group">
                             <label>Mevcut Şifre</label>
                             <input type="password" id="mevcutSifre" required>
@@ -72,7 +68,6 @@
                     </form>
                 </section>
 
-                <!-- Ürünler Sekmesi (Sadece Firma) -->
                 <section id="tab-urunler" class="profile-section" style="display:none;">
                     <h1>Ürünlerim</h1>
                     <button onclick="showUrunModal()" class="btn-secondary">+ Yeni Ürün Ekle</button>
@@ -82,12 +77,11 @@
         </div>
     </main>
 
-    <!-- Ürün Ekleme Modalı -->
     <div id="urunModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:2000; overflow-y:auto;">
         <div style="background:white; max-width:800px; margin:50px auto; padding:30px; border-radius:8px; position:relative;">
             <span onclick="hideUrunModal()" style="position:absolute; top:10px; right:15px; font-size:24px; cursor:pointer;">&times;</span>
             <h2>Yeni Ürün Ekle</h2>
-            <form id="urunForm" onsubmit="return urunKaydet(event)">
+            <form id="urunForm">
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
                     <div class="form-group" style="grid-column:1/-1;">
                         <label>Ürün Adı *</label>
@@ -216,8 +210,8 @@
 
                     <div class="form-group" style="grid-column:1/-1;">
                         <label>Satın Alma Linki</label>
-                        <input type="text" name="satin_alma_linki" placeholder="www.ornek.com veya https://www.ornek.com">
-                        <small>http:// veya https:// otomatik eklenir</small>
+                        <input type="text" name="satin_alma_linki" placeholder="www.ornek.com">
+                        <small>http:// otomatik eklenir</small>
                     </div>
 
                     <div class="form-group" style="grid-column:1/-1;">
@@ -230,13 +224,18 @@
         </div>
     </div>
 
-    <script src="/js/auth.js"></script>
     <script>
         let currentUser = null;
         let userRole = null;
 
         // Sayfa yüklendiğinde
         document.addEventListener('DOMContentLoaded', async () => {
+            // Supabase kontrolü
+            if(typeof supabase === 'undefined') {
+                alert('Sistem yüklenirken hata oluştu. Lütfen sayfayı yenileyin.');
+                return;
+            }
+            
             const { data: { user } } = await supabase.auth.getUser();
             if(!user) {
                 window.location.href = '/giris.html';
@@ -244,46 +243,50 @@
             }
             currentUser = user;
             await loadProfile();
+            
+            // Event listenerları bağla
+            document.getElementById('profilForm').addEventListener('submit', profilGuncelle);
+            document.getElementById('sifreForm').addEventListener('submit', sifreDegistir);
+            document.getElementById('urunForm').addEventListener('submit', urunKaydet);
+            document.getElementById('fotoInput').addEventListener('change', function() { fotoYukle(this); });
         });
 
-        // Profil bilgilerini yükle
+        // Profil yükle
         async function loadProfile() {
+            if(!currentUser) return;
+            
             const { data: profile, error } = await supabase
                 .from('profiles')
                 .select('*')
                 .eq('id', currentUser.id)
                 .single();
 
-            if(error) {
+            if(error || !profile) {
                 console.error('Profil yüklenirken hata:', error);
                 return;
             }
 
             userRole = profile.rol;
-
-            // Sidebar güncelle
+            
             document.getElementById('sidebarRol').textContent = 
                 profile.rol === 'admin' ? 'Yönetici' : 
-                profile.rol === 'firma' ? 'Firma' : 'Doktor';
+                profile.rol === 'firma' ? 'Firma Sahibi' : 'Doktor';
             
             document.getElementById('sidebarAd').textContent = 
-                profile.rol === 'firma' ? profile.firma_adi : profile.ad_soyad;
+                profile.rol === 'firma' ? (profile.firma_adi || 'Firma') : (profile.ad_soyad || 'Kullanıcı');
 
             if(profile.profil_fotosu) {
                 document.getElementById('profilFoto').src = profile.profil_fotosu;
             }
 
-            // Rol bazlı menü gösterimi
             if(profile.rol === 'firma') {
                 document.getElementById('btn-urunler').style.display = 'block';
                 loadFirmaUrunleri();
             }
 
-            // Form alanlarını doldur
             renderProfileForm(profile);
         }
 
-        // Profil formunu render et
         function renderProfileForm(profile) {
             const container = document.getElementById('profilFormContent');
             
@@ -322,7 +325,7 @@
                     </div>
                     <div class="form-group">
                         <label>İlgi Alanları</label>
-                        <textarea name="ilgi_alanlari" placeholder="Örn: Yüz estetiği, botox...">${profile.ilgi_alanlari || ''}</textarea>
+                        <textarea name="ilgi_alanlari">${profile.ilgi_alanlari || ''}</textarea>
                     </div>
                     <div class="form-group">
                         <label>Şehir</label>
@@ -333,132 +336,88 @@
                         <textarea name="adres">${profile.adres || ''}</textarea>
                     </div>
                     <div class="form-group">
-                        <label>Cep Telefonu</label>
+                        <label>Telefon</label>
                         <input type="tel" name="telefon" value="${profile.telefon || ''}">
                     </div>
                 `;
             }
         }
 
-        // Sekme değiştirme
         function showTab(tabName) {
-            // Tüm sekmeleri gizle
             document.getElementById('tab-bilgiler').style.display = 'none';
             document.getElementById('tab-sifre').style.display = 'none';
             document.getElementById('tab-urunler').style.display = 'none';
+            document.querySelectorAll('.profile-nav button').forEach(btn => btn.classList.remove('active'));
             
-            // Tüm butonlardan active sınıfını kaldır
-            document.querySelectorAll('.profile-nav button').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            
-            // Seçili sekmeyi göster
             document.getElementById('tab-' + tabName).style.display = 'block';
             document.getElementById('btn-' + tabName).classList.add('active');
         }
 
-        // Profil güncelleme
         async function profilGuncelle(e) {
             e.preventDefault();
+            if(!currentUser) return;
             
             const formData = new FormData(e.target);
             const updates = {};
-            
-            formData.forEach((value, key) => {
-                if(value) updates[key] = value;
-            });
+            formData.forEach((value, key) => { if(value) updates[key] = value; });
 
-            const { error } = await supabase
-                .from('profiles')
-                .update(updates)
-                .eq('id', currentUser.id);
+            const { error } = await supabase.from('profiles').update(updates).eq('id', currentUser.id);
 
             if(error) {
                 alert('Güncelleme hatası: ' + error.message);
             } else {
                 alert('Profil bilgileri güncellendi!');
-                await loadProfile(); // Yeniden yükle
+                await loadProfile();
             }
-            return false;
         }
 
-        // Şifre değiştirme
         async function sifreDegistir(e) {
             e.preventDefault();
             
             const mevcut = document.getElementById('mevcutSifre').value;
             const yeni = document.getElementById('yeniSifre').value;
             const tekrar = document.getElementById('yeniSifreTekrar').value;
-            const hataMsg = document.getElementById('sifreHata');
             
             if(yeni !== tekrar) {
-                hataMsg.textContent = 'Yeni şifreler eşleşmiyor!';
-                return false;
+                document.getElementById('sifreHata').textContent = 'Şifreler eşleşmiyor!';
+                return;
             }
             
-            const { error } = await supabase.auth.updateUser({ 
-                password: yeni 
-            });
-            
+            const { error } = await supabase.auth.updateUser({ password: yeni });
             if(error) {
-                hataMsg.textContent = error.message;
+                document.getElementById('sifreHata').textContent = error.message;
             } else {
-                alert('Şifreniz başarıyla değiştirildi!');
+                alert('Şifre değiştirildi!');
                 e.target.reset();
             }
-            return false;
         }
 
-        // Fotoğraf yükleme
         async function fotoYukle(input) {
-            if(!input.files || input.files.length === 0) return;
+            if(!input.files || input.files.length === 0 || !currentUser) return;
             
             const file = input.files[0];
             const fileExt = file.name.split('.').pop();
             const fileName = `${currentUser.id}-${Date.now()}.${fileExt}`;
             
-            // Storage'a yükle
-            const { data, error } = await supabase.storage
-                .from('profil-fotolari')
-                .upload(fileName, file);
+            const { data, error } = await supabase.storage.from('profil-fotolari').upload(fileName, file);
+            if(error) { alert('Yükleme hatası: ' + error.message); return; }
             
-            if(error) {
-                alert('Fotoğraf yüklenirken hata: ' + error.message);
-                return;
-            }
+            const { data: urlData } = supabase.storage.from('profil-fotolari').getPublicUrl(fileName);
+            await supabase.from('profiles').update({ profil_fotosu: urlData.publicUrl }).eq('id', currentUser.id);
             
-            // Public URL al
-            const { data: urlData } = supabase.storage
-                .from('profil-fotolari')
-                .getPublicUrl(fileName);
-            
-            // Profili güncelle
-            const { error: updateError } = await supabase
-                .from('profiles')
-                .update({ profil_fotosu: urlData.publicUrl })
-                .eq('id', currentUser.id);
-            
-            if(updateError) {
-                alert('Profil güncellenirken hata: ' + updateError.message);
-            } else {
-                document.getElementById('profilFoto').src = urlData.publicUrl;
-                alert('Profil fotoğrafı güncellendi!');
-            }
+            document.getElementById('profilFoto').src = urlData.publicUrl;
+            alert('Fotoğraf güncellendi!');
         }
 
-        // Modal kontrolleri
-        function showUrunModal() {
-            document.getElementById('urunModal').style.display = 'block';
-        }
-
-        function hideUrunModal() {
-            document.getElementById('urunModal').style.display = 'none';
+        function showUrunModal() { document.getElementById('urunModal').style.display = 'block'; }
+        function hideUrunModal() { 
+            document.getElementById('urunModal').style.display = 'none'; 
             document.getElementById('urunForm').reset();
         }
 
-        // Ürün kaydetme
         async function urunKaydet(e) {
             e.preventDefault();
+            if(!currentUser) return;
             
             const formData = new FormData(e.target);
             const data = {
@@ -467,58 +426,40 @@
                 kategori: formData.get('kategori')
             };
 
-            // URL'yi düzenle (http ekle)
             let link = formData.get('satin_alma_linki');
-            if(link && !link.startsWith('http')) {
-                link = 'https://' + link;
-            }
+            if(link && !link.startsWith('http')) link = 'https://' + link;
             data.satin_alma_linki = link;
 
-            // Diğer alanları ekle (boş olanlar hariç)
             formData.forEach((value, key) => {
-                if(value && key !== 'satin_alma_linki' && key !== 'urun_adi' && key !== 'kategori') {
+                if(value && !data[key] && key !== 'urun_adi' && key !== 'kategori' && key !== 'satin_alma_linki') {
                     data[key] = value;
                 }
             });
 
             const { error } = await supabase.from('urunler').insert([data]);
-            
-            if(error) {
-                alert('Ürün eklenirken hata: ' + error.message);
-                console.error(error);
-            } else {
-                alert('Ürün başarıyla eklendi!');
-                hideUrunModal();
-                loadFirmaUrunleri();
+            if(error) { alert('Hata: ' + error.message); }
+            else { 
+                alert('Ürün eklendi!'); 
+                hideUrunModal(); 
+                loadFirmaUrunleri(); 
             }
-            return false;
         }
 
-        // Firma ürünlerini listele
         async function loadFirmaUrunleri() {
+            if(!currentUser) return;
+            
             const { data: urunler, error } = await supabase
-                .from('urunler')
-                .select('*')
-                .eq('firma_id', currentUser.id)
-                .order('created_at', { ascending: false });
+                .from('urunler').select('*').eq('firma_id', currentUser.id).order('created_at', { ascending: false });
 
             const container = document.getElementById('firmaUrunListesi');
-            
-            if(error) {
-                container.innerHTML = '<p>Hata oluştu</p>';
-                return;
-            }
-
-            if(urunler.length === 0) {
-                container.innerHTML = '<p>Henüz ürün eklenmemiş.</p>';
-                return;
-            }
+            if(error) { container.innerHTML = '<p>Hata</p>'; return; }
+            if(urunler.length === 0) { container.innerHTML = '<p>Henüz ürün yok.</p>'; return; }
 
             container.innerHTML = urunler.map(u => `
-                <div class="product-card">
+                <div class="product-card" style="margin-bottom:15px; padding:15px; border:1px solid #ddd; border-radius:8px;">
                     <h3>${u.urun_adi}</h3>
                     <p>Kategori: ${u.kategori}</p>
-                    <p>Fiyat: ${u.kutu_fiyati ? '₺' + u.kutu_fiyati : '-'}</p>
+                    ${u.kutu_fiyati ? '<p>Fiyat: ₺' + u.kutu_fiyati + '</p>' : ''}
                 </div>
             `).join('');
         }
