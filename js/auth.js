@@ -1,13 +1,13 @@
-// Supabase yapılandırması - Kendi bilgilerinizle değiştirin
+// Supabase yapılandırması
 const SUPABASE_URL = 'https://jptoeqfmejdkycrzmikj.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_bGg-UZ46lXuET4o1HAe0Tg_9H1u3cSk';
 
-// Global supabase client
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// Global olarak tanımla (tüm sayfalardan erişilebilir)
+window.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// Auth durumunu kontrol et
-async function authKontrol() {
-    const { data: { session } } = await supabase.auth.getSession();
+// Auth kontrol fonksiyonu
+window.authKontrol = async function() {
+    const { data: { session } } = await window.supabase.auth.getSession();
     
     if(!session) {
         if(!window.location.pathname.includes('giris.html')) {
@@ -22,19 +22,22 @@ async function authKontrol() {
     const profileLink = document.getElementById('profileLink');
     
     if(loginBtn) loginBtn.style.display = 'none';
-    if(logoutBtn) logoutBtn.style.display = 'inline-block';
+    if(logoutBtn) {
+        logoutBtn.style.display = 'inline-block';
+        logoutBtn.onclick = window.cikisYap;
+    }
     if(profileLink) profileLink.style.display = 'inline-block';
     
     return session.user;
-}
+};
 
-// Çıkış yap
-async function cikisYap() {
-    await supabase.auth.signOut();
+// Çıkış fonksiyonu
+window.cikisYap = async function() {
+    await window.supabase.auth.signOut();
     window.location.href = '/';
-}
+};
 
-// Sayfa yüklendiğinde çalıştır
+// Sayfa yüklendiğinde
 document.addEventListener('DOMContentLoaded', async () => {
     
     // Giriş Formu
@@ -47,7 +50,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const sifre = document.getElementById('girisSifre').value;
             const hataMsg = document.getElementById('girisHata');
             
-            const { data, error } = await supabase.auth.signInWithPassword({
+            const { data, error } = await window.supabase.auth.signInWithPassword({
                 email: email,
                 password: sifre
             });
@@ -59,17 +62,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
             
             // Başarılı giriş - yönlendirme
-            const { data: profil, error: profilError } = await supabase
+            const { data: profil } = await window.supabase
                 .from('profiles')
                 .select('rol')
                 .eq('id', data.user.id)
                 .single();
-            
-            if(profilError) {
-                console.error('Profil hatası:', profilError);
-                window.location.href = '/profil.html';
-                return;
-            }
             
             if(profil && profil.rol === 'admin') {
                 window.location.href = '/admin/panel.html';
@@ -95,7 +92,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
             
-            const { data: authData, error: authError } = await supabase.auth.signUp({
+            const { data: authData, error: authError } = await window.supabase.auth.signUp({
                 email: email,
                 password: sifre,
             });
@@ -106,12 +103,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
             
-            // Profil bilgilerini güncelle
             const profilData = {
                 id: authData.user.id,
                 rol: rol,
-                email: email,
-                telefon: document.getElementById('telefon')?.value || ''
+                email: email
             };
             
             if(rol === 'firma') {
@@ -123,15 +118,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 profilData.brans = document.getElementById('doktorBrans')?.value || '';
             }
             
-            const { error: profilError } = await supabase
-                .from('profiles')
-                .update(profilData)
-                .eq('id', authData.user.id);
-            
-            if(profilError) {
-                if(hataMsg) hataMsg.textContent = profilError.message;
-                return;
-            }
+            await window.supabase.from('profiles').update(profilData).eq('id', authData.user.id);
             
             alert('Kayıt başarılı! Giriş yapabilirsiniz.');
-            window
+            window.location.href = '/giris.html';
+        });
+    }
+});
