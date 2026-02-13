@@ -1,13 +1,13 @@
-// Supabase yapılandırması
+// Supabase yapılandırması - Kendi bilgilerinizle değiştirin
 const SUPABASE_URL = 'https://jptoeqfmejdkycrzmikj.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_bGg-UZ46lXuET4o1HAe0Tg_9H1u3cSk';
 
-// Global değişken - farklı isim kullanarak çakışmayı önle
-window.db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// Global supabase client
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// Tüm fonksiyonlarda window.db kullanacağız
+// Auth durumunu kontrol et
 async function authKontrol() {
-    const { data: { session } } = await window.db.auth.getSession();
+    const { data: { session } } = await supabase.auth.getSession();
     
     if(!session) {
         if(!window.location.pathname.includes('giris.html')) {
@@ -16,6 +16,7 @@ async function authKontrol() {
         return null;
     }
     
+    // Navbar güncelle
     const loginBtn = document.getElementById('loginBtn');
     const logoutBtn = document.getElementById('logoutBtn');
     const profileLink = document.getElementById('profileLink');
@@ -27,12 +28,13 @@ async function authKontrol() {
     return session.user;
 }
 
+// Çıkış yap
 async function cikisYap() {
-    await window.db.auth.signOut();
+    await supabase.auth.signOut();
     window.location.href = '/';
 }
 
-// Sayfa yüklendiğinde
+// Sayfa yüklendiğinde çalıştır
 document.addEventListener('DOMContentLoaded', async () => {
     
     // Giriş Formu
@@ -45,7 +47,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const sifre = document.getElementById('girisSifre').value;
             const hataMsg = document.getElementById('girisHata');
             
-            const { data, error } = await window.db.auth.signInWithPassword({
+            const { data, error } = await supabase.auth.signInWithPassword({
                 email: email,
                 password: sifre
             });
@@ -56,8 +58,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
             
-            // Başarılı giriş - rol kontrolü
-            const { data: profil, error: profilError } = await window.db
+            // Başarılı giriş - yönlendirme
+            const { data: profil, error: profilError } = await supabase
                 .from('profiles')
                 .select('rol')
                 .eq('id', data.user.id)
@@ -69,7 +71,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
             
-            // Yönlendirme
             if(profil && profil.rol === 'admin') {
                 window.location.href = '/admin/panel.html';
             } else {
@@ -94,7 +95,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
             
-            const { data: authData, error: authError } = await window.db.auth.signUp({
+            const { data: authData, error: authError } = await supabase.auth.signUp({
                 email: email,
                 password: sifre,
             });
@@ -105,6 +106,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
             
+            // Profil bilgilerini güncelle
             const profilData = {
                 id: authData.user.id,
                 rol: rol,
@@ -121,7 +123,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 profilData.brans = document.getElementById('doktorBrans')?.value || '';
             }
             
-            const { error: profilError } = await window.db
+            const { error: profilError } = await supabase
                 .from('profiles')
                 .update(profilData)
                 .eq('id', authData.user.id);
@@ -132,12 +134,4 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
             
             alert('Kayıt başarılı! Giriş yapabilirsiniz.');
-            window.location.href = '/giris.html';
-        });
-    }
-    
-    // Sayfa yüklendiğinde auth kontrolü
-    if(!window.location.pathname.includes('giris.html')) {
-        await authKontrol();
-    }
-});
+            window
